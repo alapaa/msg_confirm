@@ -40,6 +40,8 @@ void run_client(string server_ip, unsigned short server_port)
 
     string msg;
 
+    cout << "Client, sending UDP to " << server_ip << ":" << server_port << '\n';
+
     SocketWrapper swr(socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP));
     if (swr.get() == -1)
     {
@@ -64,7 +66,7 @@ void run_client(string server_ip, unsigned short server_port)
         {
             throw std::system_error(errno, std::system_category());
         }
-        cout << "--- msg sent.";
+        cout << "--- msg sent.\n";
     }
 
     cout << "Done sending, terminating!\n";
@@ -78,6 +80,7 @@ void run_server(unsigned short server_port)
     char buf[BUFLEN];
     int retval;
 
+    cout << "Server, listening to UDP on port " << server_port << '\n';
     SocketWrapper swr(socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP));
     if (swr.get() == -1)
     {
@@ -139,8 +142,8 @@ int main(int argc, char* argv[])
     else if (argc < 2 || argc > 3)
     {
         cerr << "Usage:\n"
-            "sendrecv -server <recv port> OR\n"
-            "sendrecv -client <server IPv4> <server port>\n";
+            "msg_confirm <recv port> OR\n"
+            "msg_confirm <server IPv4> <server port>\n";
     }
 
     if (progtype == SERVER)
