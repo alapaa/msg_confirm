@@ -3,6 +3,8 @@
 #include <sstream>
 #include <stdexcept>
 #include <system_error>
+#include <chrono>
+#include <thread>
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -33,10 +35,13 @@ enum Progtype
     UNDEF
 };
 
-void run_client(string server_ip, unsigned short server_port)
+void run_client(string server_ip, string server2_ip, unsigned short server_port)
 {
     struct sockaddr_in si_serv;
+    struct sockaddr_in si_serv2;
+    struct sockaddr_in* chosen_serv;
     int retval;
+    int i = 0;
 
     string msg;
 
@@ -56,12 +61,36 @@ void run_client(string server_ip, unsigned short server_port)
         throw std::runtime_error("inet_pton() failed!");
     }
 
-    cout << "--- Enter strings to send, terminate with ctrl-D (EOF)\n";
-    while (getline(cin, msg))
+    bzero(&si_serv2, sizeof(si_serv));
+    si_serv2.sin_family = AF_INET;
+    si_serv2.sin_port = htons(server_port);
+    retval = inet_pton(AF_INET, server2_ip.c_str(), &si_serv2.sin_addr);
+    if (retval != 1) {
+        throw std::runtime_error("inet_pton() failed!");
+    }
+
+    //cout << "--- Enter strings to send, terminate with ctrl-D (EOF)\n";
+    //while (getline(cin, msg))
+    string emptystring(1000, ' ');
+    for (;;)
     {
-        cout << "--- Sending msg\'" << msg << "\'...\n";
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        i++;
+        msg = std::to_string(i);
+        msg += emptystring;
+        if (i % 2)
+        {
+            cout << "--- Sending msg \'" << msg << "\' to server 1" << "...\n";
+            chosen_serv = &si_serv;
+        }
+        else
+        {
+            cout << "--- Sending msg \'" << msg << "\' to server 2" << "...\n";
+            chosen_serv = &si_serv2;
+        }
+
         retval = sendto(swr.get(), msg.c_str(), msg.length()+1, 0,
-                        (struct sockaddr*)&si_serv, sizeof(si_serv));
+                        (struct sockaddr*)chosen_serv, sizeof(*chosen_serv));
         if (retval == -1)
         {
             throw std::system_error(errno, std::system_category());
@@ -117,6 +146,7 @@ int main(int argc, char* argv[])
 
     unsigned short server_port = -1;
     string server_ip;
+    string server2_ip;
     if (argc == 2)
     {
         // server
@@ -128,12 +158,13 @@ int main(int argc, char* argv[])
         }
 
     }
-    else if (argc == 3)
+    else if (argc == 4)
     {
         // client
         progtype = CLIENT;
         server_ip = argv[1];
-        stringstream ss(argv[2]);
+        server2_ip = argv[2];
+        stringstream ss(argv[3]);
         ss >> server_port;
         if (ss.fail()) {
             throw std::runtime_error("Error converting server port!");
@@ -152,7 +183,7 @@ int main(int argc, char* argv[])
     }
     else if (progtype == CLIENT)
     {
-        run_client(server_ip, server_port);
+        run_client(server_ip, server2_ip, server_port);
     }
 
     return 0;
