@@ -15,7 +15,7 @@
 #include "socket_wrapper.h"
 
 
-#define BUFLEN 512
+#define BUFLEN 2048
 
 using std::string;
 using std::cin;
