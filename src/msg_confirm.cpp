@@ -109,6 +109,10 @@ void run_server(unsigned short server_port)
     char buf[BUFLEN];
     int retval;
 
+    int pkt_num = -1;
+    int prev_pkt_num = -1;
+    stringstream ss;
+
     cout << "Server, listening to UDP on port " << server_port << '\n';
     SocketWrapper swr(socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP));
     if (swr.get() == -1)
@@ -137,6 +141,23 @@ void run_server(unsigned short server_port)
 
         cout << "Received packet from " << inet_ntoa(si_cli.sin_addr)
              << ":" << ntohs(si_cli.sin_port) << ". Data: \'" << buf << "\'\n";
+
+        ss.str(buf);
+        ss.clear();
+        ss >> pkt_num;
+        if (ss.fail())
+        {
+            throw std::runtime_error("Error converting packet number!");
+        }
+
+        if (prev_pkt_num != -1 && ((pkt_num - prev_pkt_num) != 2))
+        {
+            cerr << "Pkt num: " << pkt_num << " prev pkt num: " << prev_pkt_num
+                 << '\n';
+            throw std::runtime_error("----------------------------\n\n\n\n\n\n\n\n\n\n\n\nERROR! Missing packets!\n\n\n\n\n\n\n\n\n");
+        }
+        prev_pkt_num = pkt_num;
+
     }
 }
 
